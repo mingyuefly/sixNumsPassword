@@ -16,6 +16,7 @@
 @interface ViewController ()
 
 @property (nonatomic, strong) MYCodeInputView *inputView;
+@property (nonatomic, strong) UIButton *cancelButton;
 
 @end
 
@@ -26,6 +27,12 @@
 -(void)initUI
 {
     [self.view addSubview:self.inputView];
+    [self.view addSubview:self.cancelButton];
+    
+    [self.cancelButton mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.center.equalTo(self.view);
+        make.bottom.equalTo(self.view).offset(-GMLAYOUTRATE(100));
+    }];
 }
 
 #pragma mark - root view life time
@@ -37,6 +44,11 @@
     [self initUI];
 }
 
+#pragma mark - button actions
+-(void)cancelAction
+{
+    [self.inputView clear];
+}
 
 #pragma mark - getters and setters
 -(UIView *)inputView
@@ -47,12 +59,24 @@
         _inputView.heighlightBorderColor = [UIColor colorWithRGBString:@"#1E86FF"];
         __weak typeof(self) weakSelf = self;
         _inputView.completedBlock = ^(NSString *text) {
+            NSLog(@"text = %@", text);
             //            if (weakSelf.completedBlock) {
             //                weakSelf.completedBlock(text);
             //            }
         };
     }
     return _inputView;
+}
+
+-(UIButton *)cancelButton
+{
+    if (!_cancelButton) {
+        _cancelButton = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_cancelButton setTitle:@"clear" forState:UIControlStateNormal];
+        [_cancelButton setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+        [_cancelButton addTarget:self action:@selector(cancelAction) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _cancelButton;
 }
 
 -(NSString *)codeText

@@ -33,6 +33,11 @@
     }
 }
 
+-(void)paste:(id)sender
+{
+    NSLog(@"paste1");
+}
+
 @end
 
 @interface MYCodeInputView ()<UITextFieldDelegate, KeyInputTextfieldDelegate>
@@ -63,11 +68,12 @@
         self.numbers = codeNums;
         self.cornerRadius = 3.0f;
         self.borederWidth = 0.5f;
-        //self.borderColor = [UIColor redColor];
+        //self.borderColor = [UIColor blackColor];
         //self.cursorColor = [UIColor redColor];
-        //self.inputIsFirstResponder = YES;
+        self.inputIsFirstResponder = NO;
         self.currentIndex = 0;
         [self setupUI];
+        [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(pasteAction:) name:UIMenuControllerDidHideMenuNotification object:nil];
     }
     return self;
 }
@@ -84,6 +90,11 @@
     [self createTextFields];
     [self inputBecomeFirstResponder];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(textFieldTextDidChangeNotification) name:UITextFieldTextDidChangeNotification object:nil];
+}
+
+-(void)addConstraints
+{
+    
 }
 
 -(void)createTextFields
@@ -140,8 +151,8 @@
     GMCodeInputViewTextField *textfield = [self.textfields objectAtIndex:self.currentIndex];
     textfield.enabled = YES;
     //textfield.text = @"";
-    [self updateBorderColor:self.currentIndex];
     [textfield becomeFirstResponder];
+    [self updateBorderColor:self.currentIndex];
 }
 
 -(void)updateBorderColor:(NSUInteger)index
@@ -169,10 +180,74 @@
     GMCodeInputViewTextField *textfield = [self.textfields objectAtIndex:self.currentIndex];
     textfield.enabled = NO;
     [textfield resignFirstResponder];
-    [self updateBorderColor:self.currentIndex + 1];
+    if (textfield.text.length == 1) {
+        [self updateBorderColor:self.currentIndex + 1];
+    } else {
+        [self updateBorderColor:self.currentIndex];
+    }
+}
+
+-(void)clear
+{
+    for (int i = 0; i < self.textfields.count; i++) {
+        GMCodeInputViewTextField *textfield = [self.textfields objectAtIndex:i];
+        textfield.text = nil;
+    }
+    self.currentIndex = 0;
+    self.inputIsFirstResponder = NO;
+    [self inputBecomeFirstResponder];
+}
+
+#pragma mark - Notification actions
+-(void)pasteAction:(id)sender
+{
+    UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
+    NSString * pastedString = pasteboard.string;
+    NSString * string = @"";
+    [self clear];
+    if (pastedString.length >= self.textfields.count) {
+        string = [pastedString substringToIndex:self.textfields.count];
+    } else {
+        string = pastedString;
+    }
+    for (int i = 0; i < string.length; i++) {
+        GMCodeInputViewTextField * textfield = [self.textfields objectAtIndex:i];
+        textfield.text = [string substringWithRange:NSMakeRange(i, 1)];
+    }
+    if (pastedString.length >= self.textfields.count) {
+        self.inputIsFirstResponder = NO;
+        GMCodeInputViewTextField *textfield = [self.textfields objectAtIndex:self.currentIndex];
+        textfield.enabled = NO;
+        [textfield resignFirstResponder];
+        self.currentIndex = string.length - 1;
+        if (textfield.text.length == 1) {
+            [self updateBorderColor:self.currentIndex + 1];
+        } else {
+            [self updateBorderColor:self.currentIndex];
+        }
+        self.currentIndex = string.length - 1;
+        self.completeTypeIn = YES;
+        __weak typeof(self) weakSelf = self;
+        if (self.completedBlock) {
+            self.completedBlock(weakSelf.codeText);
+        }
+    } else {
+        self.inputIsFirstResponder = YES;
+        self.currentIndex = string.length;
+        GMCodeInputViewTextField *textfield = [self.textfields objectAtIndex:self.currentIndex];
+        textfield.enabled = YES;
+        //textfield.text = @"";
+        [textfield becomeFirstResponder];
+        [self updateBorderColor:self.currentIndex];
+        self.completeTypeIn = NO;
+    }
+    NSLog(@"pasteAction");
 }
 
 #pragma mark - actions
+-(void)textFieldDidBeginEditing:(UITextField *)textField{
+    
+}
 -(void)textFieldTextDidChangeNotification
 {
     GMCodeInputViewTextField *textfield = [self.textfields objectAtIndex:self.currentIndex];
@@ -181,9 +256,11 @@
             [self inputResignFirstResponder];
             self.currentIndex++;
             [self inputBecomeFirstResponder];
+            self.completeTypeIn = NO;
         } else {
             // 输满六位
             [self inputResignFirstResponder];
+            self.completeTypeIn = YES;
             __weak typeof(self) weakSelf = self;
             if (self.completedBlock) {
                 self.completedBlock(weakSelf.codeText);
@@ -193,6 +270,7 @@
         if (self.currentIndex != 0) {
             self.currentIndex--;
             [self inputBecomeFirstResponder];
+            self.completeTypeIn = NO;
         }
     }
 }
@@ -275,5 +353,19 @@
     _heighlightBorderColor = heighlightBorderColor;
     [self updateBorderColor:self.currentIndex];
 }
+
+-(void)dealloc
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+//-(BOOL)completeTypeIn
+//{
+//    if (self.currentIndex == self.numbers - 1) {
+//        return YES;
+//    } else {
+//        return NO;
+//    }
+//}
 
 @end

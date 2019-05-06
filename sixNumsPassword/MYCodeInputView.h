@@ -8,7 +8,7 @@
 
 #import <UIKit/UIKit.h>
 
-typedef void(^GMCodeInputViewCompletedBlock)(NSString *text);
+typedef void(^GMCodeInputViewCompletedBlock)(NSString * _Nullable text);
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -22,10 +22,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, readonly) NSString *codeText;//输入密码内容
 @property (nonatomic, assign) BOOL isSecured;//是否密码显示
 @property (nonatomic, copy) GMCodeInputViewCompletedBlock completedBlock;
+@property (nonatomic, assign) BOOL completeTypeIn;
 
 +(instancetype)InitCodeInputViewWithFrame:(CGRect)frame CodeNums:(NSInteger)codeNums;
 -(void)inputBecomeFirstResponder;
 -(void)inputResignFirstResponder;
+-(void)clear;
 
 @end
 
